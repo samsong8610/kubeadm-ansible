@@ -1,15 +1,22 @@
 # Ansible
 ansible_user: root
 
+# Docker
+docker_version: 18.06
+
 # Kubernetes
 kube_version: v1.15.3
 token: b0f7b8.8d1767876297d85c
+image_repository: gcr.azk8s.cn/google_containers
 
 # 1.8.x feature: --feature-gates SelfHosting=true
 init_opts: ""
 
+# Loadbalancer IP for apiserver
+apiserver_loadbalancer_address: "10.254.192.55"
+
 # Any other additional opts you want to add..
-kubeadm_opts: "--image-repository gcr.azk8s.cn/google_containers"
+kubeadm_opts: ""
 # For example:
 # kubeadm_opts: '--apiserver-cert-extra-sans "k8s.domain.com,kubernetes.domain.com"'
 
@@ -49,3 +56,11 @@ tmp_dir: /tmp/kubeadm-ansible-files
 # Custom repository
 repository:
   aliyun: true
+
+mount_data_block: True
+data_block_device: /dev/vdb
+data_fs_type: ext4
+data_mount_point: /data
+
+# Use ansible inventory hostname instead system hostname
+override_system_hostname: True

@@ -1,0 +1,11 @@
+---
+
+# Data block device
+data_block_device: /dev/vdb
+data_fs_type: ext4
+
+# Data mount point
+data_mount_point: /data
+
+# Mount data block device
+mount_data_block: False

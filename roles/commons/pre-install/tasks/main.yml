@@ -1,5 +1,11 @@
 ---
 
+- name: Create kubernetes config directory if not exists
+  file:
+    path: /etc/kubernetes
+    recurse: yes
+    state: directory
+
 - name: Install Kubernetes packages
   include_tasks: pkg.yml
 
@@ -35,6 +41,13 @@
 
 - name: Copy kubeadm conf to drop-in directory
   template: src=20-extra-args.conf.j2 dest=/etc/systemd/system/kubelet.service.d/20-extra-args.conf
+
+# How to detect if the firewalld package installed?
+- name: Disable firewalld
+  service:
+    name: firewalld
+    enabled: no
+    state: stopped
 
 - name: Reload kubelet daemon
   systemd:

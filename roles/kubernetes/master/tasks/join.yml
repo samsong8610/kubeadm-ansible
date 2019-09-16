@@ -1,0 +1,64 @@
+---
+
+- name: Reset Kubernetes component
+  shell: "kubeadm reset --force"
+  register: reset_cluster
+
+# - name: Upload kubeadm certificate key
+#   command: kubeadm init phase --config /etc/kubernetes/kubeadm-config.yaml upload-certs --upload-certs
+#   register: kubeadm_upload_cert
+#   delegate_to: "{{ groups['master'][0] }}"
+
+# - name: Parse kubeadm certificate key if not set
+#   set_fact:
+#     kubeadm_certificate_key: "{{ kubeadm_upload_cert.stdout_lines[-1] | trim }}"
+#   run_once: yes
+#   when:
+#     - kubeadm_certificate_key is not defined
+#     # - hostvars[groups['master'][0]]['kubeadm_upload_cert'] is defined
+#     # - hostvars[groups['master'][0]]['kubeadm_upload_cert'] is not skipped
+
+- name: Get certificate key from master
+  set_fact:
+    kubeadm_certificate_key: "{{ hostvars[groups['master'][0]]['kubeadm_certificate_key'] }}"
+
+# - name: Upload kubeadm certificate key
+#   command: kubeadm init phase --config /etc/kubernetes/kubeadm-config.yaml upload-certs --upload-certs
+#   register: kubeadm_upload_cert
+#   delegate_to: "{{ groups['master'][0] }}"
+#   when: kubeadm_certificate_key is not defined
+
+# - name: Parse kubeadm certificate key if not set
+#   set_fact:
+#     kubeadm_certificate_key: "{{ kubeadm_upload_cert.stdout_lines[-1] | trim }}"
+#   run_once: yes
+#   when:
+#     - kubeadm_certificate_key is not defined
+#     # - hostvars[groups['master'][0]]['kubeadm_upload_cert'] is defined
+#     # - hostvars[groups['master'][0]]['kubeadm_upload_cert'] is not skipped
+
+- name: Create kubeadm join config
+  template:
+    src: "kubeadm-join.j2"
+    dest: "/etc/kubernetes/kubeadm-join.yaml"
+
+- name: Wait for k8s apiserver
+  wait_for:
+    host: "{{ master_ip }}"
+    port: "6443"
+    timeout: 300
+
+- name: Join control plane to Kubernetes cluster
+  when: reset_cluster is succeeded
+  shell: |
+    kubeadm join --token {{ token }} \
+                --discovery-token-unsafe-skip-ca-verification \
+                --control-plane \
+                --certificate-key {{ kubeadm_certificate_key }} \
+                {{ master_ip }}:6443
+  # shell: |
+  #   kubeadm join --config /etc/kubernetes/kubeadm-join.yaml \
+  #                --control-plane
+  register: join_cluster
+  notify:
+    - Recreate kube-dns

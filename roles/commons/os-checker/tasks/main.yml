@@ -38,3 +38,15 @@
   when: ansible_os_family == "Debian"
   set_fact:
     system_env_dir: "/etc/default"
+
+- name: Assign inventory name to unconfigured hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
+  when:
+    - override_system_hostname
+
+- name: Mount data block device
+  include_tasks: mount.yml
+  when: mount_data_block
+  tags:
+    - "mount"

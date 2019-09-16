@@ -4,17 +4,37 @@
   shell: "kubeadm reset --force"
   register: reset_cluster
 
+- name: Create kubeadm config
+  template:
+    src: "kubeadm-config.j2"
+    dest: "/etc/kubernetes/kubeadm-config.yaml"
+
 - name: Init Kubernetes cluster
   when: reset_cluster is succeeded
+  # shell: |
+  #   kubeadm init --service-cidr {{ service_cidr }} \
+  #                --kubernetes-version {{ kube_version }} \
+  #                --pod-network-cidr {{ pod_network_cidr }} \
+  #                --token {{ token }} \
+  #                --apiserver-advertise-address {{ master_ip }} \
+  #                --upload-certs \
+  #                {{ kubeadm_opts }} \
+  #                {{ init_opts }}
   shell: |
-    kubeadm init --service-cidr {{ service_cidr }} \
-                 --kubernetes-version {{ kube_version }} \
-                 --pod-network-cidr {{ pod_network_cidr }} \
-                 --token {{ token }} \
-                 --apiserver-advertise-address {{ master_ip }} \
+    kubeadm init --config /etc/kubernetes/kubeadm-config.yaml \
+                 --upload-certs \
                  {{ kubeadm_opts }} \
                  {{ init_opts }}
   register: init_cluster
+
+- name: set kubeadm certificate key
+  set_fact:
+    kubeadm_certificate_key: "{{ item | regex_search('--certificate-key ([^ ]+)','\\1') | first }}"
+  with_items: "{{ hostvars[groups['master'][0]]['init_cluster'].stdout_lines | default([]) }}"
+  when:
+    # - kubeadm_version is version('v1.14.0', '>=')
+    - kubeadm_certificate_key is not defined
+    - item | trim | match('.*--certificate-key .*')
 
 - name: Create Kubernetes config directory
   file:

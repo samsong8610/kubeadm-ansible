@@ -7,6 +7,7 @@
 
 - hosts: master
   gather_facts: yes
+  serial: 1
   become: yes
   roles:
     - { role: kubernetes/master, tags: master }
@@ -14,6 +15,7 @@
 
 - hosts: node
   gather_facts: yes
+  serial: 1
   become: yes
   roles:
     - { role: kubernetes/node, tags: node }

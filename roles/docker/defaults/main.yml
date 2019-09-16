@@ -1,3 +1,16 @@
 ---
 
 docker_version: 17.03
+
+# old docker package names to be removed
+docker_remove_packages_yum:
+  - docker
+  - docker-common
+  - docker-engine
+  - docker-selinux.noarch
+  - docker-client
+  - docker-client-latest
+  - docker-latest
+  - docker-latest-logrotate
+  - docker-logrotate
+  - docker-engine-selinux.noarch

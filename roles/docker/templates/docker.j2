@@ -1,5 +1,13 @@
 INSECURE_REGISTRY=""
 DOCKER_OPTS=""
 {% if ansible_os_family == "RedHat" -%}
-DOCKER_STORAGE_OPTIONS="--storage-driver=overlay"
+    {% if mount_data_block -%}
+    DOCKER_STORAGE_OPTIONS="--storage-driver=overlay2 --graph={{ data_mount_point }}/docker"
+    {% else -%}
+    DOCKER_STORAGE_OPTIONS="--storage-driver=overlay2"
+    {% endif -%}
+{% else -%}
+    {% if mount_data_block -%}
+    DOCKER_STORAGE_OPTIONS="--graph={{ data_mount_point }}/docker"
+    {% endif -%}
 {% endif -%}

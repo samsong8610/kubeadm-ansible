@@ -7,8 +7,33 @@
 
 - name: Init cluster if needed
   include_tasks: init.yml
-  when: not kubeadm_ca.stat.exists
+  when:
+  - inventory_hostname == groups['master']|first
+  - not kubeadm_ca.stat.exists
   run_once: yes
+
+- name: Upload kubeadm certificate key
+  command: kubeadm init phase --config /etc/kubernetes/kubeadm-config.yaml upload-certs --upload-certs
+  register: kubeadm_upload_cert
+  when:
+  - inventory_hostname == groups['master']|first
+  - kubeadm_certificate_key is not defined
+
+- name: Parse kubeadm certificate key if not set
+  set_fact:
+    kubeadm_certificate_key: "{{ kubeadm_upload_cert.stdout_lines[-1] | trim }}"
+  run_once: yes
+  when:
+  - inventory_hostname == groups['master']|first
+  - kubeadm_certificate_key is not defined
+  - kubeadm_upload_cert is defined
+  - kubeadm_upload_cert is not skipped
+
+- name: Join other control plane master
+  include_tasks: join.yml
+  when:
+  - inventory_hostname != groups['master']|first
+  - not kubeadm_ca.stat.exists
 
 - name: Enable and check kubelet service
   systemd:
@@ -25,4 +50,5 @@
     flat: yes
   run_once: yes
   ignore_errors: yes
+  when: inventory_hostname == groups['master']|first
 

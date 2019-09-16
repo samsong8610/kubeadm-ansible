@@ -33,6 +33,9 @@
     enabled: yes
     gpgcheck: no
 
+- name: Adjust default yum repos | Qcloud
+  include_tasks: repo-yum.yml
+  when: ansible_os_family == "RedHat"
 
 - name: Install kubernetes packages (RHEL/CentOS)
   when: ansible_os_family == "RedHat"

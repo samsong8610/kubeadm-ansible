@@ -1,0 +1,39 @@
+---
+- name: Get mount point stat
+  stat:
+    path: "{{ data_mount_point }}"
+  register: mount_point_check
+  tags: "mount"
+
+- name: Create mount point directory
+  shell: mkdir -p {{ data_mount_point }}
+  when: not mount_point_check.stat.exists
+  tags: "mount"
+
+- name: Assert mount point is a directory
+  assert:
+    that: mount_point_check.stat.isdir
+    msg: "Mount point {{ data_mount_point }} is not directory"
+  when: mount_point_check.stat.exists
+  tags: "mount"
+
+- name: Get data block device existed
+  stat:
+    path: "{{ data_block_device }}"
+  register: data_blk_dev_check
+  tags: "mount"
+
+- name: Assert data block device exists
+  assert:
+    that: data_blk_dev_check.stat.exists
+    msg: "Data block device {{ data_block_device }} does not exist"
+  tags: "mount"
+
+- name: Mount data block device
+  mount:
+    src: "{{ data_block_device }}"
+    path: "{{ data_mount_point }}"
+    fstype: "{{ data_fs_type }}"
+    state: "mounted"
+    backup: "yes"
+  tags: "mount"
