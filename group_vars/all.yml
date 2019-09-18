@@ -5,7 +5,7 @@ ansible_user: root
 docker_version: 18.06
 
 # Kubernetes
-kube_version: v1.15.3
+kube_version: v1.13.10
 token: b0f7b8.8d1767876297d85c
 image_repository: gcr.azk8s.cn/google_containers
 
@@ -38,11 +38,13 @@ enable_dashboard: yes
 # insecure_registries: []
 insecure_registries: ['gcr.io', registry.yonghui.cn]
 
+kube_config_dir: /etc/kubernetes
 systemd_dir: /lib/systemd/system
 system_env_dir: /etc/sysconfig
-network_dir: /etc/kubernetes/network
-kubeadmin_config: /etc/kubernetes/admin.conf
-kube_addon_dir: /etc/kubernetes/addon
+network_dir: "{{ kube_config_dir }}/network"
+kube_cert_dir: "{{ kube_config_dir }}/pki"
+kubeadmin_config: "{{ kube_config_dir }}/admin.conf"
+kube_addon_dir: "{{ kube_config_dir }}/addon"
 
 # Additional feature to install
 additional_features:

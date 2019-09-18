@@ -174,7 +174,7 @@ spec:
               mountPath: /etc/kube-flannel/
       containers:
         - name: kube-flannel
-          image: registry.yonghui.cn/ycloud/flannel:v0.2
+          image: docker.io/samsong8610/flannel:v0.2
           command:
             - /opt/bin/flanneld
           args:

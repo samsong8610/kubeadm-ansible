@@ -7,7 +7,7 @@
 - name: Create kubeadm config
   template:
     src: "kubeadm-config.j2"
-    dest: "/etc/kubernetes/kubeadm-config.yaml"
+    dest: "{{ kube_config_dir }}/kubeadm-config.yaml"
 
 - name: Init Kubernetes cluster
   when: reset_cluster is succeeded
@@ -20,10 +20,10 @@
   #                --upload-certs \
   #                {{ kubeadm_opts }} \
   #                {{ init_opts }}
-  shell: |
-    kubeadm init --config /etc/kubernetes/kubeadm-config.yaml \
-                 --upload-certs \
-                 {{ kubeadm_opts }} \
+  shell: >-
+    kubeadm init --config {{ kube_config_dir }}/kubeadm-config.yaml
+    {% if kube_version is version('v1.15.0', '>=') %}--upload-certs{% endif %}
+                 {{ kubeadm_opts }}
                  {{ init_opts }}
   register: init_cluster
 
@@ -32,7 +32,7 @@
     kubeadm_certificate_key: "{{ item | regex_search('--certificate-key ([^ ]+)','\\1') | first }}"
   with_items: "{{ hostvars[groups['master'][0]]['init_cluster'].stdout_lines | default([]) }}"
   when:
-    # - kubeadm_version is version('v1.14.0', '>=')
+    - kube_version is version('v1.15.0', '>=')
     - kubeadm_certificate_key is not defined
     - item | trim | match('.*--certificate-key .*')
 

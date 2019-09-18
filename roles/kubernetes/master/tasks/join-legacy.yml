@@ -1,0 +1,69 @@
+---
+
+- name: Reset Kubernetes component
+  shell: "kubeadm reset --force"
+  register: reset_cluster
+
+- name: Make sure certs directory existed
+  file:
+    path: "{{ kube_cert_dir }}/etcd"
+    state: "directory"
+    recurse: yes
+
+- name: slurp kubeadm certs
+  slurp:
+    src: "{{ item }}"
+  with_items:
+    - "{{ kube_config_dir }}/admin.conf"
+    - "{{ kube_cert_dir }}/apiserver.crt"
+    - "{{ kube_cert_dir }}/apiserver.key"
+    - "{{ kube_cert_dir }}/apiserver-kubelet-client.crt"
+    - "{{ kube_cert_dir }}/apiserver-kubelet-client.key"
+    - "{{ kube_cert_dir }}/ca.crt"
+    - "{{ kube_cert_dir }}/ca.key"
+    - "{{ kube_cert_dir }}/front-proxy-ca.crt"
+    - "{{ kube_cert_dir }}/front-proxy-ca.key"
+    - "{{ kube_cert_dir }}/front-proxy-client.crt"
+    - "{{ kube_cert_dir }}/front-proxy-client.key"
+    - "{{ kube_cert_dir }}/sa.key"
+    - "{{ kube_cert_dir }}/sa.pub"
+    - "{{ kube_cert_dir }}/etcd/ca.crt"
+    - "{{ kube_cert_dir }}/etcd/ca.key"
+  register: kubeadm_certs
+  delegate_to: "{{ groups['master']|first }}"
+
+- name: kubeadm | write out kubeadm certs
+  copy:
+    dest: "{{ item.item }}"
+    content: "{{ item.content | b64decode }}"
+    owner: root
+    group: root
+    mode: 0600
+  no_log: true
+  register: copy_kubeadm_certs
+  with_items: "{{ kubeadm_certs.results }}"
+
+- name: Create kubeadm join config
+  template:
+    src: "kubeadm-join.j2"
+    dest: "{{ kube_config_dir }}/kubeadm-join.yaml"
+
+- name: Wait for k8s apiserver
+  wait_for:
+    host: "{{ master_ip }}"
+    port: "6443"
+    timeout: 300
+
+- name: Join control plane to Kubernetes cluster
+  when: reset_cluster is succeeded
+  shell: |
+    kubeadm join --token {{ token }} \
+                --discovery-token-unsafe-skip-ca-verification \
+                --experimental-control-plane \
+                {{ master_ip }}:6443
+  # shell: |
+  #   kubeadm join --config {{ kube_config_dir }}/kubeadm-join.yaml \
+  #                --control-plane
+  register: join_cluster
+  notify:
+    - Recreate kube-dns

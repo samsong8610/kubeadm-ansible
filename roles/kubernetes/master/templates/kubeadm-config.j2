@@ -1,4 +1,4 @@
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/{{ kubeadmConfig_api_version }}
 bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
@@ -24,14 +24,18 @@ apiServer:
 {% if apiserver_loadbalancer_address is defined %}
   - {{ apiserver_loadbalancer_address }}
 {% endif %}
-apiVersion: kubeadm.k8s.io/v1beta2
-certificatesDir: /etc/kubernetes/pki
+apiVersion: kubeadm.k8s.io/{{ kubeadmConfig_api_version }}
+certificatesDir: {{ kube_cert_dir }}
 clusterName: kubernetes
 dns:
   type: CoreDNS
 etcd:
   local:
+{% if mount_data_block %}
+    dataDir: {{ data_mount_point }}/etcd
+{% else %}
     dataDir: /var/lib/etcd
+{% endif %}
 imageRepository: {{ image_repository }}
 kind: ClusterConfiguration
 kubernetesVersion: {{ kube_version }}

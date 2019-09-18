@@ -2,9 +2,9 @@
 
 systemd_dir: /lib/systemd/system
 system_env_dir: /etc/sysconfig
-network_dir: /etc/kubernetes/network
-kubeadmin_config: /etc/kubernetes/admin.conf
-kube_addon_dir: /etc/kubernetes/addon
+network_dir: "{{ kube_config_dir }}/network"
+kubeadmin_config: "{{ kube_config_dir }}/admin.conf"
+kube_addon_dir: "{{ kube_config_dir }}/addon"
 
 # Use ansible inventory hostname instead system hostname
 override_system_hostname: True

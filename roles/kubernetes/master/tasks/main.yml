@@ -2,8 +2,11 @@
 
 - name: Check if kubeadm has already run
   stat:
-    path: "/etc/kubernetes/pki/ca.key"
+    path: "{{ kube_cert_dir }}/ca.key"
   register: kubeadm_ca
+
+- name: Set kubeadm version
+  include_tasks: kubeadm-version.yml
 
 - name: Init cluster if needed
   include_tasks: init.yml
@@ -13,9 +16,10 @@
   run_once: yes
 
 - name: Upload kubeadm certificate key
-  command: kubeadm init phase --config /etc/kubernetes/kubeadm-config.yaml upload-certs --upload-certs
+  command: kubeadm init phase --config {{ kube_config_dir }}/kubeadm-config.yaml upload-certs --upload-certs
   register: kubeadm_upload_cert
   when:
+  - kube_version is version('v1.15.0', '>=')
   - inventory_hostname == groups['master']|first
   - kubeadm_certificate_key is not defined
 
@@ -32,6 +36,14 @@
 - name: Join other control plane master
   include_tasks: join.yml
   when:
+  - kube_version is version('v1.15.0', '>=')
+  - inventory_hostname != groups['master']|first
+  - not kubeadm_ca.stat.exists
+
+- name: Join other control plane master using legacy method
+  include_tasks: join-legacy.yml
+  when:
+  - kube_version is version('v1.15.0', '<')
   - inventory_hostname != groups['master']|first
   - not kubeadm_ca.stat.exists
 
@@ -45,7 +57,7 @@
 
 - name: "Copy config file"
   fetch:
-    src: /etc/kubernetes/admin.conf 
+    src: "{{ kubeadmin_config }}"
     dest: "{{ lookup('env', 'HOME') }}/admin.conf"
     flat: yes
   run_once: yes
